@@ -1,3 +1,4 @@
 .env
 scan.log
 scanned_hashes.txt
+.env.save
