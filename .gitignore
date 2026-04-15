@@ -1,4 +1,11 @@
 .env
+.env.*
 scan.log
 scanned_hashes.txt
-.env.save
+.venv/
+*.save
+*.bak
+*.orig
+*~
+.*.swp
+.DS_Store
