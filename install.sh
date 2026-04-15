@@ -22,14 +22,19 @@ step "Checking prerequisites"
 command -v python3 >/dev/null || die "python3 not found. Install Xcode command-line tools: xcode-select --install"
 ok "python3 found: $(python3 --version)"
 
-step "Installing 'requests' library"
-python3 -m pip install --user --quiet requests 2>&1 | grep -v "^WARNING" || true
-python3 -c "import requests" 2>/dev/null || die "Failed to install 'requests'."
-ok "requests installed"
-
 step "Creating $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 touch "$INSTALL_DIR/scanned_hashes.txt" "$INSTALL_DIR/scan.log"
+
+step "Building Python virtual environment"
+VENV="$INSTALL_DIR/.venv"
+if [[ ! -x "$VENV/bin/python" ]]; then
+  python3 -m venv "$VENV" || die "Failed to create venv at $VENV"
+fi
+"$VENV/bin/pip" install --quiet --upgrade pip 2>&1 | tail -1 || true
+"$VENV/bin/pip" install --quiet requests || die "Failed to install requests into venv"
+"$VENV/bin/python" -c "import requests" || die "requests import failed"
+ok "venv ready at $VENV (requests installed)"
 
 step "Fetching scanner.py"
 if [[ -f "$(dirname "$0")/scanner.py" ]]; then
@@ -76,7 +81,7 @@ cat > "$PLIST" <<EOF
     <key>Label</key><string>com.rl.download-scanner</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/python3</string>
+        <string>$INSTALL_DIR/.venv/bin/python</string>
         <string>$INSTALL_DIR/scanner.py</string>
     </array>
     <key>RunAtLoad</key><true/>
@@ -96,8 +101,8 @@ say ""
 warn "macOS requires one manual click for privacy reasons — this is the ONLY step you need to do yourself."
 say ""
 say "  1. When System Settings opens, click ${BOLD}+${RESET} at the bottom of the list"
-say "  2. Press ${BOLD}Cmd+Shift+G${RESET}, type ${BOLD}/usr/bin/python3${RESET}, hit Enter, click Open"
-say "  3. Toggle the new ${BOLD}python3${RESET} entry ${BOLD}ON${RESET}"
+say "  2. Press ${BOLD}Cmd+Shift+G${RESET}, type ${BOLD}$INSTALL_DIR/.venv/bin/python${RESET}, hit Enter, click Open"
+say "  3. Toggle the new ${BOLD}python${RESET} entry ${BOLD}ON${RESET}"
 say "  4. If prompted, click ${BOLD}Quit & Reopen${RESET}"
 say ""
 open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
